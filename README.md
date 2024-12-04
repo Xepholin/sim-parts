@@ -35,22 +35,22 @@ La première ligne est un commentaire, dans les suivantes ‘ 2 ‘ est le type 
 
 Sur la base des coordonnées (x,y,z) des 1000 particules, calculer l’énergie microscopique de ce système et les forces agissant sur chacune des particules dans le cas d’un potentiel de Lennard Jones :
 
-$$
+```math
 U^{LJ} = 4 \sum_{i=1}^N \sum_{j>i}^N \varepsilon^* \left[ \left(\frac{r^*}{r_{ij}^*}\right)^{12} - 2 \left(\frac{r^*}{r_{ij}^*}\right)^6 \right] = 4 \sum_{i=1}^N \sum_{j>i}^N u_{ij}
-$$
+```
 
 On prendra $r^* = 3.0$ et $\varepsilon^* = 0.2$.
 
 Rappel pour un terme de Lennard Jones
 
-$$
+```math
 U^{LJ} = 4 \sum_{i=1}^N \sum_{j>i}^N \varepsilon^* \left[ \left(\frac{r^*}{r_{ij}^*}\right)^{12} - 2 \left(\frac{r^*}{r_{ij}^*}\right)^6 \right] = \sum_{i=1}^N \sum_{j>i}^N u_{ij}
-$$
+```
 
 Les forces des particules se calculent à partir du gradient analytique associé aux fonctions élémentaires $u_{ij}$
 
-$$
+```math
 \frac{\partial u_{ij}}{\partial x_i} = -4 \varepsilon^* \left[ 12 \left(\frac{r^*}{r_{ij}}\right)^{13} - 2 \times 6 \left(\frac{r^*}{r_{ij}}\right)^7 \right] \times \frac{\partial r_{ij}}{\partial x_i} = -48 \varepsilon_{ij}^* \left[ \left(\frac{r^*}{r_{ij}}\right)^{14} - \left(\frac{r^*}{r_{ij}}\right)^8 \right] \times (x_i - x_j)
-$$
+```
 
 Comme pour les coordonnées (x,y,z), les forces (fx,fy,fz) seront stockées dans un (des) vecteur(s) ou tableau(x).
