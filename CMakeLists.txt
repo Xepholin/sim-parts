@@ -8,12 +8,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(MAIN_SOURCE_FILES
     src/main.cpp
     src/part.cpp
-    src/utils.cpp
 )
 
 set(HEADER_FILES
     include/part.hpp
-    include/utils.hpp
 )
 
 add_executable(spart ${MAIN_SOURCE_FILES})

@@ -2,20 +2,33 @@
 #include <vector>
 
 #include "part.hpp"
-#include "utils.hpp"
 
 using namespace std;
 
-#define NB_PART 1000
+#define TOTAL_PARTS 1000
+#define LOCAL_PARTS 999
 
 static string DEFAULT_PARTS_FILE = "../particule.xyz";
 
 int main() {
-    vector<Particule> *parts = new vector<Particule>(NB_PART);
+    size_t fsize = 3 * ((TOTAL_PARTS * (TOTAL_PARTS - 1)) / 2);
 
-    fill_vec(parts, NB_PART, DEFAULT_PARTS_FILE);
+    vector<Particule> *parts = new vector<Particule>;
+    vector<double> *forces = new vector<double>;
 
-    cout << (*parts)[999].x << " " << (*parts)[999].y << " " << (*parts)[999].z << endl;
+    parts->reserve(TOTAL_PARTS);
+    forces->reserve(fsize);
+
+    fill_vec(parts, TOTAL_PARTS, DEFAULT_PARTS_FILE);
+    compute_force(forces, parts, TOTAL_PARTS);
+
+    double sum = 0.0;
+
+    for (size_t i = 0; i < fsize; ++i) {
+        sum += (*forces)[i];
+    }
+
+    cout << "Somme des forces: " << sum << endl;
 
     return 0;
 }
