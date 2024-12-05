@@ -17,4 +17,5 @@ struct Particule {
 };
 
 void *fill_vec(vector<Particule> *parts, int n, std::string const path);
-void compute_force(vector<double> *forces, const vector<Particule> *parts, int n);
+double compute_lj(const vector<Particule> * parts, int n);
+void compute_forces(vector<double> *forces, const vector<Particule> * parts, int n);
