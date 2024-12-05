@@ -7,10 +7,10 @@
 #include <set>
 #include <sstream>
 
-const double r_star = 9.0;
+const double r_star_sq = 9.0;
 const double epsilon_star = 0.2;
 
-void *fill_vec(vector<Particule> *parts, int n, std::string const path) {
+void *fill_vec(array<Particule, TOTAL_PARTS> *parts, int n, const string path) {
     string line;
     ifstream fs(path);
 
@@ -27,7 +27,7 @@ void *fill_vec(vector<Particule> *parts, int n, std::string const path) {
     return parts;
 }
 
-double compute_lj(const vector<Particule> *parts, int n) {
+double compute_lj(const array<Particule, TOTAL_PARTS> *parts, const int n) {
     double lj = 0.0;
 
     double ix = 0.0;
@@ -38,7 +38,11 @@ double compute_lj(const vector<Particule> *parts, int n) {
     double jy = 0.0;
     double jz = 0.0;
 
-    double r_ij = 0.0;
+    double r_ij_sq = 0.0;
+
+    double rx = 0.0;
+    double ry = 0.0;
+    double rz = 0.0;
 
     double r2 = 0.0;
     double r4 = 0.0;
@@ -51,16 +55,17 @@ double compute_lj(const vector<Particule> *parts, int n) {
         iz = (*parts)[i].z;
 
         for (int j = i + 1; j < n; ++j) {
-
             jx = (*parts)[j].x;
             jy = (*parts)[j].y;
             jz = (*parts)[j].z;
 
-            r_ij = (ix - jx) * (ix - jx);
-            r_ij += (iy - jy) * (iy - jy);
-            r_ij += (iz - jz) * (iz - jz);
+            rx = (ix - jx);
+            ry = (iy - jy);
+            rz = (iz - jz);
 
-            r2 = r_star / r_ij;
+            r_ij_sq = rx * rx + ry * ry + rz * rz;
+
+            r2 = r_star_sq / r_ij_sq;
 
             r4 = r2 * r2;
             r6 = r4 * r2;
@@ -73,7 +78,7 @@ double compute_lj(const vector<Particule> *parts, int n) {
     return 4.0 * epsilon_star * lj;
 }
 
-void compute_forces(vector<double> *forces, const vector<Particule> *parts, int n) {
+void compute_forces(array<double, fsize> *forces, const array<Particule, TOTAL_PARTS> *parts, const int n) {
     double u_ij = 0.0;
 
     double fx = 0.0;
@@ -88,7 +93,11 @@ void compute_forces(vector<double> *forces, const vector<Particule> *parts, int 
     double jy = 0.0;
     double jz = 0.0;
 
-    double r_ij = 0.0;
+    double r_ij_sq = 0.0;
+
+    double rx = 0.0;
+    double ry = 0.0;
+    double rz = 0.0;
 
     double r2 = 0.0;
 
@@ -103,9 +112,9 @@ void compute_forces(vector<double> *forces, const vector<Particule> *parts, int 
 
         for (int j = 0; j < n; ++j) {
             if (i == j) {
-                forces->push_back(0.0);
-                forces->push_back(0.0);
-                forces->push_back(0.0);
+                (*forces)[i * n + j] = 0.0;
+                (*forces)[i * n + j + 1] = 0.0;
+                (*forces)[i * n + j + 2] = 0.0;
 
                 continue;
             }
@@ -114,11 +123,13 @@ void compute_forces(vector<double> *forces, const vector<Particule> *parts, int 
             jy = (*parts)[j].y;
             jz = (*parts)[j].z;
 
-            r_ij = (ix - jx) * (ix - jx);
-            r_ij += (iy - jy) * (iy - jy);
-            r_ij += (iz - jz) * (iz - jz);
+            rx = (ix - jx);
+            ry = (iy - jy);
+            rz = (iz - jz);
 
-            r2 = r_star / r_ij;
+            r_ij_sq = rx * rx + ry * ry + rz * rz;
+
+            r2 = r_star_sq / r_ij_sq;
 
             r4 = r2 * r2;
             r8 = r4 * r4;
@@ -130,9 +141,9 @@ void compute_forces(vector<double> *forces, const vector<Particule> *parts, int 
             fy = u_ij * (iy - jy);
             fz = u_ij * (iz - jz);
 
-            forces->push_back(fx);
-            forces->push_back(fy);
-            forces->push_back(fz);
+            (*forces)[i * n + j] = fx;
+            (*forces)[i * n + j + 1] = fy;
+            (*forces)[i * n + j + 2] = fz;
         }
     }
 }

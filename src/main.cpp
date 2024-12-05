@@ -1,27 +1,17 @@
 #include <iostream>
-#include <vector>
+#include <array>
 
 #include "part.hpp"
 
 using namespace std;
 
-#define TOTAL_PARTS 1000
-#define LOCAL_PARTS 999
-
 static string DEFAULT_PARTS_FILE = "../particule.xyz";
 
 int main() {
-    size_t fsize = ((TOTAL_PARTS * (TOTAL_PARTS - 1)) / 2);
-
-    vector<Particule> *parts = new vector<Particule>;
-    vector<double> *energies = new vector<double>;
-    vector<double> *forces = new vector<double>;
+    array<Particule, TOTAL_PARTS> *parts = new array<Particule, TOTAL_PARTS>;
+    array<double, fsize> *forces = new array<double, fsize>;
 
     double lj = 0.0;
-
-    parts->reserve(TOTAL_PARTS);
-    energies->reserve(fsize);
-    forces->reserve(3*TOTAL_PARTS * TOTAL_PARTS);
 
     fill_vec(parts, TOTAL_PARTS, DEFAULT_PARTS_FILE);
     lj =  compute_lj(parts, TOTAL_PARTS);
@@ -31,7 +21,7 @@ int main() {
 
     double fsum = 0.0;
 
-    for (size_t i = 0; i < 3*TOTAL_PARTS * TOTAL_PARTS; ++i) {
+    for (size_t i = 0; i < fsize; ++i) {
         fsum += (*forces)[i];
     }
 

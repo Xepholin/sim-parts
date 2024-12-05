@@ -1,9 +1,14 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <array>
 
 #include "part.hpp"
+
+#define TOTAL_PARTS 1000
+#define LOCAL_PARTS 999
+
+const size_t fsize = 3* (TOTAL_PARTS * TOTAL_PARTS);
 
 using namespace std;
 
@@ -16,6 +21,6 @@ struct Particule {
     ~Particule() = default;
 };
 
-void *fill_vec(vector<Particule> *parts, int n, std::string const path);
-double compute_lj(const vector<Particule> * parts, int n);
-void compute_forces(vector<double> *forces, const vector<Particule> * parts, int n);
+void *fill_vec(array<Particule, TOTAL_PARTS> *parts, int n, std::string const path);
+double compute_lj(const array<Particule, TOTAL_PARTS> * parts, int n);
+void compute_forces(array<double, fsize> *forces, const array<Particule, TOTAL_PARTS> * parts, int n);
