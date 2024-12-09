@@ -2,7 +2,6 @@
 #include <array>
 #include <chrono>
 #include <ctime>
-#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <ratio>
@@ -20,16 +19,16 @@ static string DEFAULT_PARTS_FILE = "../particule.xyz";
 using namespace std;
 
 int main() {
-    alignas(alignof(Particule)) auto parts = make_unique<array<Particule, TOTAL_PARTS>>();
-    alignas(alignof(Particule)) auto forces = make_unique<Particule>();
-    alignas(alignof(Particule)) auto forces_per = make_unique<Particule>();
+    alignas(alignof(Particule)) auto parts = make_unique<Particule>();
+    auto forces = make_unique<array<double, 3>>();
+    auto forces_per = make_unique<array<double, 3>>();
 
     double lj = 0.0;
     double lj_sym = 0.0;
 
     fill_vec(parts, TOTAL_PARTS, DEFAULT_PARTS_FILE);
 
-    cout << "           AoS           " << endl;
+    cout << "           SoA           " << endl;
 
     auto t1 = chrono::high_resolution_clock::now();
     // for (int iter = 0; iter < NB_ITER; ++iter) {
@@ -37,7 +36,7 @@ int main() {
     // }
     auto t2 = chrono::high_resolution_clock::now();
 
-    double fsum = forces->x + forces->y + forces->z;
+    double fsum = (*forces)[0] + (*forces)[1] + (*forces)[2];
     double elapsed = chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / NB_ITER;
 
     cout << fixed << "Lennard Jones: " << lj << endl;
@@ -46,11 +45,11 @@ int main() {
 
     t1 = chrono::high_resolution_clock::now();
     // for (int iter = 0; iter < NB_ITER; ++iter) {
-    lj_sym = energy_forces_periode(parts, forces_per, 27.0, 42.0, 42.0, 42.0, TOTAL_PARTS);
+    lj_sym = energy_forces_periode(parts, forces, 27.0, 42.0, 42.0, 42.0, TOTAL_PARTS);
     // }
     t2 = chrono::high_resolution_clock::now();
 
-    double fsum_per = forces_per->x + forces_per->y + forces_per->z;
+    double fsum_per = (*forces_per)[0] + (*forces_per)[1] + (*forces_per)[2];
     elapsed = chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / NB_ITER;
 
     cout << fixed << "Lennard Jones sym 27: " << lj_sym << endl;

@@ -3,7 +3,6 @@
 #include <math.h>
 
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -12,7 +11,7 @@ const double r_star_sq = 9.0;
 const double epsilon_star = 0.2;
 const double r_cut = 100.0;
 
-void fill_vec(unique_ptr<array<Particule, TOTAL_PARTS>> &parts, const int n, const std::string path) {
+void fill_vec(unique_ptr<Particule> &parts, const int n, const std::string path) {
     string line;
     ifstream fs(path);
 
@@ -20,27 +19,26 @@ void fill_vec(unique_ptr<array<Particule, TOTAL_PARTS>> &parts, const int n, con
         for (int i = 0; i < n; ++i) {
             getline(fs, line);
             istringstream ss(line);
-            ss >> (*parts)[i].x >> (*parts)[i].y >> (*parts)[i].z;
+            ss >> parts->x[i] >> parts->y[i] >> parts->z[i];
         }
     } else {
         cout << "Unable to open file";
     }
 }
 
-double energy_forces(const unique_ptr<array<Particule, TOTAL_PARTS>> &parts, unique_ptr<Particule> &forces, const int n) {
+double energy_forces(const unique_ptr<Particule> &parts, unique_ptr<array<double, 3>> &forces, const int n) {
     double lj = 0.0;
     double u_ij = 0.0;
-    unique_ptr<Particule> neg_forces = make_unique<Particule>();
 
     for (int i = 0; i < n; ++i) {
-        const double ix = (*parts)[i].x;
-        const double iy = (*parts)[i].y;
-        const double iz = (*parts)[i].z;
+        const double ix = parts->x[i];
+        const double iy = parts->y[i];
+        const double iz = parts->z[i];
 
         for (int j = i + 1; j < n; ++j) {
-            const double jx = (*parts)[j].x;
-            const double jy = (*parts)[j].y;
-            const double jz = (*parts)[j].z;
+            const double  jx = parts->x[j];
+            const double  jy = parts->y[j];
+            const double  jz = parts->z[j];
 
             const double rx = (ix - jx);
             const double ry = (iy - jy);
@@ -62,26 +60,22 @@ double energy_forces(const unique_ptr<array<Particule, TOTAL_PARTS>> &parts, uni
             const double fy = u_ij * ry;
             const double fz = u_ij * rz;
 
-            forces->x += fx;
-            forces->y += fy;
-            forces->z += fz;
+            (*forces)[0] += fx;
+            (*forces)[1] += fy;
+            (*forces)[2] += fz;
 
-            forces->x += -fx;
-            forces->y += -fy;
-            forces->z += -fz;
+            (*forces)[0] += -fx;
+            (*forces)[1] += -fy;
+            (*forces)[2] += -fz;
 
-            lj += r12 - 2.0 * r6;
+            lj += (r12 - 2.0 * r6);
         }
     }
-
-    // forces->x += neg_forces->x;
-    // forces->y += neg_forces->y;
-    // forces->z += neg_forces->z;
 
     return 4.0 * epsilon_star * lj;
 }
 
-double energy_forces_periode(const unique_ptr<array<Particule, TOTAL_PARTS>> &parts, unique_ptr<Particule> &forces, const int n_sym, const double lx, const double ly, const double lz, const int n) {
+double energy_forces_periode(const unique_ptr<Particule> &parts, unique_ptr<array<double, 3>> &forces, const int n_sym, const double lx, const double ly, const double lz, const int n) {
     double lj = 0.0;
     double u_ij = 0.0;
 
@@ -106,9 +100,9 @@ double energy_forces_periode(const unique_ptr<array<Particule, TOTAL_PARTS>> &pa
         const double iz_sym = trans[i_sym + 2];
 
         for (int i = 0; i < n; ++i) {
-            double ix = (*parts)[i].x;
-            double iy = (*parts)[i].y;
-            double iz = (*parts)[i].z;
+            double ix = parts->x[i];
+            double iy = parts->y[i];
+            double iz = parts->z[i];
 
             ix = ix - int(ix / lx) * lx;
             iy = iy - int(iy / ly) * ly;
@@ -119,9 +113,9 @@ double energy_forces_periode(const unique_ptr<array<Particule, TOTAL_PARTS>> &pa
                     continue;
                 }
 
-                double jx = (*parts)[j].x;
-                double jy = (*parts)[j].y;
-                double jz = (*parts)[j].z;
+                double jx = parts->x[j];
+                double jy = parts->y[j];
+                double jz = parts->z[j];
 
                 jx = jx - int(jx / lx) * lx;
                 jy = jy - int(jy / ly) * ly;
@@ -152,13 +146,13 @@ double energy_forces_periode(const unique_ptr<array<Particule, TOTAL_PARTS>> &pa
                     const double fy = u_ij * ry;
                     const double fz = u_ij * rz;
 
-                    forces->x += fx;
-                    forces->y += fy;
-                    forces->z += fz;
+                    (*forces)[0] += fx;
+                    (*forces)[1] += fy;
+                    (*forces)[2] += fz;
 
-                    forces->x += -fx;
-                    forces->y += -fy;
-                    forces->z += -fz;
+                    (*forces)[0] += -fx;
+                    (*forces)[1] += -fy;
+                    (*forces)[2] += -fz;
 
                     lj += (r12 - 2.0 * r6);
                 } else {
