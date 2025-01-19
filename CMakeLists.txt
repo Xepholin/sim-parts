@@ -14,6 +14,7 @@ set(MAIN_SOURCE_FILES
 set(HEADER_FILES
     include/part.hpp
     include/tools.hpp
+    include/const.hpp
 )
 
 add_executable(spart ${MAIN_SOURCE_FILES})
