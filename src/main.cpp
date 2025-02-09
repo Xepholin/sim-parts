@@ -16,56 +16,29 @@
 #define NB_WARM 100
 #define NB_ITER 1
 
-static string DEFAULT_PARTS_FILE = "../particule.xyz";
-
 using namespace std;
 
 int main() {
-    auto parts_aos = make_unique<array<data_t, TOTAL_PARTS>>();
-    auto forces_aos = make_unique<array<data_t, TOTAL_PARTS>>();
+    Simulator sim(TOTAL_PARTS, n_sym, 0.0, 3000.0, 1.0, 300.0, 0.01);
+    // double lj = 0.0;
 
-    auto parts_soa = make_unique<dataArray_t>();
-    auto forces_soa = make_unique<dataArray_t>();
+    sim.fillVec(DEFAULT_PARTS_FILE);
 
-    double lj_aos = 0.0;
-    double lj_soa = 0.0;
+    // auto t1 = chrono::high_resolution_clock::now();
+    // for (int iter = 0; iter < NB_ITER; ++iter) {
+    //     lj = sim.computeEnergyForces();
+    // }
+    // auto t2 = chrono::high_resolution_clock::now();
 
-    empty_vec(TOTAL_PARTS, parts_aos);
-    empty_vec(TOTAL_PARTS, forces_aos);
-    empty_vec(TOTAL_PARTS, parts_soa);
-    empty_vec(TOTAL_PARTS, forces_soa);
+    // double elapsed = chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / NB_ITER;
 
-    fill_vec(parts_aos, TOTAL_PARTS, DEFAULT_PARTS_FILE);
+    cout << "Somme des forces sym " << sim.get_n_sym() << ": " << scientific << sim.sumForces() << endl;
+    cout << fixed << "Lennard Jones sym " << sim.get_n_sym() << ": " << sim.computeEnergyForces() << endl;
+    // cout << "Temps: " << elapsed * 1e-9 << " s\n"
+    //      << endl;
 
-    cout << "           AoS           " << endl;
+    sim.fillMoment();
 
-    auto t1 = chrono::high_resolution_clock::now();
-    for (int iter = 0; iter < NB_ITER; ++iter) {
-        lj_aos = energy_forces(parts_aos, forces_aos, 27, TOTAL_PARTS);
-    }
-    auto t2 = chrono::high_resolution_clock::now();
-
-    double elapsed = chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / NB_ITER;
-
-    cout << fixed << "Lennard Jones sym 27: " << lj_aos << endl;
-    cout << "Temps: " << elapsed * 1e-9 << " s\n"
-         << endl;
-
-    fill_vec(parts_soa, TOTAL_PARTS, DEFAULT_PARTS_FILE);
-
-    cout << "           SoA           " << endl;
-
-    t1 = chrono::high_resolution_clock::now();
-    for (int iter = 0; iter < NB_ITER; ++iter) {
-        lj_soa = energy_forces(parts_soa, forces_soa, 27, TOTAL_PARTS);
-    }
-    t2 = chrono::high_resolution_clock::now();
-
-    elapsed = chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / NB_ITER;
-
-    cout << fixed << "Lennard Jones sym 27: " << lj_soa << endl;
-    cout << "Temps: " << elapsed * 1e-9 << " s\n"
-         << endl;
-
+    sim.start(true, 20, 5);
     return 0;
 }

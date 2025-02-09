@@ -15,44 +15,40 @@ struct alignas(32) data_t {
     double z = 0.0;
 };
 
-#pragma pack()
-struct alignas(32) dataArray_t {
-    array<double, TOTAL_PARTS> x;
-    array<double, TOTAL_PARTS> y;
-    array<double, TOTAL_PARTS> z;
+class Simulator {
+public:
+    Simulator(const int n, const int n_sym, const double t_min, const double t_max, const double dt, const double T0, const double gamma);
+    ~Simulator();
+    
+    double get_n();
+    double get_n_sym();
+    double get_t_min();
+    double get_t_max();
+    double get_dt();
+
+    void fillVec(const string &path);
+    double computeEnergyForces();
+    double sumForces();
+    void velocityVerlet();
+    double computeKineticEnergy();
+    double computeKineticTemperature();
+    void correctionRatio();
+    void correctionCenter();
+    void fillMoment();
+    void correctionMoment();
+    void start(const bool out, const int correction_step, const int save_step);
+
+private:
+    int n = 0;
+    int n_sym = 0;
+    double t_min = 0.0;
+    double t_max = 0.0;
+    double dt = 0.0;
+    double T0 = 0.0;
+    double gamma = 0.0;
+
+    unique_ptr<array<data_t, TOTAL_PARTS>> parts;
+    unique_ptr<array<data_t, TOTAL_PARTS>> forces;
+    unique_ptr<array<data_t, TOTAL_PARTS>> moment;
+    unique_ptr<array<double, TOTAL_PARTS>> masses;
 };
-
-const array<array<double, 3>, 27> vec_translation = {
-    array<double, 3>{0.0, -l, -l},
-    array<double, 3>{0.0, -l, 0.0},
-    array<double, 3>{0.0, -l, l},
-    array<double, 3>{0.0, 0.0, -l},
-    array<double, 3>{0.0, 0.0, 0.0},
-    array<double, 3>{0.0, 0.0, l},
-    array<double, 3>{0.0, l, -l},
-    array<double, 3>{0.0, l, 0.0},
-    array<double, 3>{0.0, l, l},
-    array<double, 3>{-l, -l, -l},
-    array<double, 3>{-l, -l, 0.0},
-    array<double, 3>{-l, -l, l},
-    array<double, 3>{-l, 0.0, -l},
-    array<double, 3>{-l, 0.0, 0.0},
-    array<double, 3>{-l, 0.0, l},
-    array<double, 3>{-l, l, -l},
-    array<double, 3>{-l, l, 0.0},
-    array<double, 3>{-l, l, l},
-    array<double, 3>{l, -l, -l},
-    array<double, 3>{l, -l, 0.0},
-    array<double, 3>{l, -l, l},
-    array<double, 3>{l, 0.0, -l},
-    array<double, 3>{l, 0.0, 0.0},
-    array<double, 3>{l, 0.0, l},
-    array<double, 3>{l, l, -l},
-    array<double, 3>{l, l, 0.0},
-    array<double, 3>{l, l, l}};
-
-template <typename T>
-void fill_vec(std::unique_ptr<T> &__restrict__ parts, const int n, const std::string &path);
-
-template <typename T>
-double energy_forces(const unique_ptr<T> &__restrict__ parts, unique_ptr<T> &__restrict__ forces, const int n_sym, const int n);
