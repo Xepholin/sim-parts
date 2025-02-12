@@ -16,7 +16,7 @@ const double n_sym = 27.0;
 const double r_star_sq = 9.0;
 const double epsilon_star = 0.2;
 
-const double r_cut = 100.0;
+const double r_cut_sq = 100.0;
 const double l = 42.0;
 
 const double conv_force = 0.0001 * 4.186;

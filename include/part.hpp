@@ -49,6 +49,7 @@ private:
 
     unique_ptr<array<data_t, TOTAL_PARTS>> parts;
     unique_ptr<array<data_t, TOTAL_PARTS>> forces;
-    unique_ptr<array<data_t, TOTAL_PARTS>> moment;
+    unique_ptr<array<data_t, TOTAL_PARTS>> moments;
+    unique_ptr<array<data_t, TOTAL_PARTS>> velocities;
     unique_ptr<array<double, TOTAL_PARTS>> masses;
 };
