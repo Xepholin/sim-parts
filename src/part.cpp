@@ -13,7 +13,7 @@
 #include "const.hpp"
 #include "tools.hpp"
 
-Simulator::Simulator(const int n, const int n_sym, const double t_min, const double t_max, const double dt, const double T0, const double gamma) {
+Simulator::Simulator(const int n, const int n_sym, const double t_min, const double t_max, const double dt, const double T0, const double gamma, const bool verlet) {
     this->n = n;
     this->n_sym = n_sym;
     this->t_min = t_min;
@@ -22,16 +22,23 @@ Simulator::Simulator(const int n, const int n_sym, const double t_min, const dou
     this->T0 = T0;
     this->gamma = gamma;
 
+    this->verlet = verlet;
+
     parts = make_unique<array<data_t, TOTAL_PARTS>>();
     forces = make_unique<array<data_t, TOTAL_PARTS>>();
     moments = make_unique<array<data_t, TOTAL_PARTS>>();
     velocities = make_unique<array<data_t, TOTAL_PARTS>>();
     masses = make_unique<array<double, TOTAL_PARTS>>();
+    neighbor = make_unique<array<array<int, n_max_neighbor * 2>, TOTAL_PARTS>>();
 
     fill(parts->begin(), parts->end(), data_t{0.0, 0.0, 0.0});
     fill(forces->begin(), forces->end(), data_t{0.0, 0.0, 0.0});
     fill(moments->begin(), moments->end(), data_t{0.0, 0.0, 0.0});
     fill(masses->begin(), masses->end(), 18.0);
+
+    for (auto& row : *neighbor) {
+        std::fill(row.begin(), row.end(), 0);
+    }
 }
 
 Simulator::~Simulator() = default;
@@ -54,6 +61,14 @@ double Simulator::get_t_max() {
 
 double Simulator::get_dt() {
     return dt;
+}
+
+string Simulator::get_verlet() {
+    if (verlet) {
+        return "oui";
+    } else {
+        return "non";
+    }
 }
 
 void Simulator::fillVec(const string& path) {
@@ -79,60 +94,53 @@ double Simulator::computeEnergyForces() {
     double lj = 0.0;
     double f_ij = 0.0;
 
-    #pragma omp parallel
-    {
-        #pragma omp for schedule(static)
-        for (int i_sym = 0; i_sym < n_sym; ++i_sym) {
-            const double ix_sym = vec_translation[i_sym][0];
-            const double iy_sym = vec_translation[i_sym][1];
-            const double iz_sym = vec_translation[i_sym][2];
+    for (int i_sym = 0; i_sym < n_sym; ++i_sym) {
+        const double ix_sym = vec_translation[i_sym][0];
+        const double iy_sym = vec_translation[i_sym][1];
+        const double iz_sym = vec_translation[i_sym][2];
 
-            for (int i = 0; i < n; ++i) {
-                double ix = (*parts)[i].x - ix_sym;
-                double iy = (*parts)[i].y - iy_sym;
-                double iz = (*parts)[i].z - iz_sym;
+        for (int i = 0; i < n; ++i) {
+            double ix = (*parts)[i].x - ix_sym;
+            double iy = (*parts)[i].y - iy_sym;
+            double iz = (*parts)[i].z - iz_sym;
 
-                for (int j = i + 1; j < n; ++j) {
-                    double jx = (*parts)[j].x;
-                    double jy = (*parts)[j].y;
-                    double jz = (*parts)[j].z;
+            for (int j = i + 1; j < n; ++j) {
+                double jx = (*parts)[j].x;
+                double jy = (*parts)[j].y;
+                double jz = (*parts)[j].z;
 
-                    double dx = ix - jx;
-                    double dy = iy - jy;
-                    double dz = iz - jz;
+                double dx = ix - jx;
+                double dy = iy - jy;
+                double dz = iz - jz;
 
-                    const double r_ij_sq = dx * dx + dy * dy + dz * dz;
+                const double r_ij_sq = dx * dx + dy * dy + dz * dz;
 
-                    if (r_ij_sq > r_cut_sq || r_ij_sq < 1e-6) {
-                        continue;
-                    }
-
-                    const double r2 = r_star_sq * (1.0 / r_ij_sq);
-                    const double r4 = r2 * r2;
-                    const double r6 = r4 * r2;
-                    const double r12 = r6 * r6;
-                    const double r8 = r6 * r2;
-                    const double r14 = r8 * r6;
-
-                    f_ij = -48.0 * epsilon_star * (r14 - 0.5 * r8);
-
-                    const double fx = f_ij * dx;
-                    const double fy = f_ij * dy;
-                    const double fz = f_ij * dz;
-                    
-                    #pragma omp atomic
-                    (*forces)[i].x += fx;
-                    (*forces)[i].y += fy;
-                    (*forces)[i].z += fz;
-
-                    #pragma omp atomic
-                    (*forces)[j].x -= fx;
-                    (*forces)[j].y -= fy;
-                    (*forces)[j].z -= fz;
-
-                    #pragma omp atomic
-                    lj += r12 - r6;
+                if (r_ij_sq > r_cut_sq || r_ij_sq < 1e-6) {
+                    continue;
                 }
+
+                const double r2 = r_star_sq * (1.0 / r_ij_sq);
+                const double r4 = r2 * r2;
+                const double r6 = r4 * r2;
+                const double r12 = r6 * r6;
+                const double r8 = r6 * r2;
+                const double r14 = r8 * r6;
+
+                f_ij = -48.0 * epsilon_star * (r14 - 0.5 * r8);
+
+                const double fx = f_ij * dx;
+                const double fy = f_ij * dy;
+                const double fz = f_ij * dz;
+
+                (*forces)[i].x += fx;
+                (*forces)[i].y += fy;
+                (*forces)[i].z += fz;
+
+                (*forces)[j].x -= fx;
+                (*forces)[j].y -= fy;
+                (*forces)[j].z -= fz;
+
+                lj += r12 - r6;
             }
         }
     }
@@ -140,6 +148,88 @@ double Simulator::computeEnergyForces() {
     return 4.0 * epsilon_star * lj;
 }
 
+void Simulator::verletList() {
+    for (int i = 0; i < n; ++i) {
+        (*neighbor)[i][0] = 0;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        int ni = 0;
+
+        for (int j = i + 1; j < n; ++j) {
+            for (int i_sym = 0; i_sym < n_sym; ++i_sym) {
+                double xj_loc = (*parts)[j].x + vec_translation[i_sym][0];
+                double yj_loc = (*parts)[j].y + vec_translation[i_sym][1];
+                double zj_loc = (*parts)[j].z + vec_translation[i_sym][2];
+
+                double dx = (*parts)[i].x - xj_loc;
+                double dy = (*parts)[i].y - yj_loc;
+                double dz = (*parts)[i].z - zj_loc;
+                double r_ij_sq = dx * dx + dy * dy + dz * dz;
+
+                if (r_ij_sq < r_cut_sq) {
+                    ni += 1;
+                    int mi = 2 * ni - 1;
+                    (*neighbor)[i][mi] = j;
+                    (*neighbor)[i][mi + 1] = i_sym;
+                }
+            }
+        }
+        (*neighbor)[i][0] = ni;
+    }
+}
+
+double Simulator::computeEnergyForcesVerlet() {
+    std::fill(forces->begin(), forces->end(), data_t{0.0, 0.0, 0.0});
+    double lj = 0.0;
+    double f_ij = 0.0;
+
+    for (int i = 0; i < n; ++i) {
+        for (int ni = 1; ni <= (*neighbor)[i][0]; ++ni) {
+            int j = (*neighbor)[i][2 * ni - 1];
+            int i_sym = (*neighbor)[i][2 * ni];
+
+            double xj_loc = (*parts)[j].x + vec_translation[i_sym][0];
+            double yj_loc = (*parts)[j].y + vec_translation[i_sym][1];
+            double zj_loc = (*parts)[j].z + vec_translation[i_sym][2];
+
+            double dx = (*parts)[i].x - xj_loc;
+            double dy = (*parts)[i].y - yj_loc;
+            double dz = (*parts)[i].z - zj_loc;
+
+            double r_ij_sq = dx * dx + dy * dy + dz * dz;
+
+            if (r_ij_sq > r_cut_sq || r_ij_sq < 1e-6) {
+                continue;
+            }
+
+            const double r2 = r_star_sq * (1.0 / r_ij_sq);
+            const double r4 = r2 * r2;
+            const double r6 = r4 * r2;
+            const double r12 = r6 * r6;
+            const double r8 = r6 * r2;
+            const double r14 = r8 * r6;
+
+            f_ij = -48.0 * epsilon_star * (r14 - 0.5 * r8);
+
+            const double fx = f_ij * dx;
+            const double fy = f_ij * dy;
+            const double fz = f_ij * dz;
+
+            (*forces)[i].x += fx;
+            (*forces)[i].y += fy;
+            (*forces)[i].z += fz;
+
+            (*forces)[j].x -= fx;
+            (*forces)[j].y -= fy;
+            (*forces)[j].z -= fz;
+
+            lj += r12 - r6;
+        }
+    }
+
+    return 4.0 * epsilon_star * lj;
+}
 
 double Simulator::sumForces() {
     double sum_forces = 0.0;
@@ -155,36 +245,33 @@ void Simulator::velocityVerlet() {
     double dt_half = 0.5 * dt;
     double l_half = 0.5 * l;
 
-    #pragma omp parallel
-    {
-        #pragma omp for schedule(static)
+    for (int i = 0; i < n; ++i) {
+        (*moments)[i].x -= dt_half * conv_force * (*forces)[i].x;
+        (*moments)[i].y -= dt_half * conv_force * (*forces)[i].y;
+        (*moments)[i].z -= dt_half * conv_force * (*forces)[i].z;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        double inv_mass = 1.0 / (*masses)[i];
+        (*parts)[i].x += dt * (*moments)[i].x * inv_mass;
+        (*parts)[i].y += dt * (*moments)[i].y * inv_mass;
+        (*parts)[i].z += dt * (*moments)[i].z * inv_mass;
+    }
+
+    if (l != 0.0) {
         for (int i = 0; i < n; ++i) {
-            (*moments)[i].x -= dt_half * conv_force * (*forces)[i].x;
-            (*moments)[i].y -= dt_half * conv_force * (*forces)[i].y;
-            (*moments)[i].z -= dt_half * conv_force * (*forces)[i].z;
-        }
-        
-        #pragma omp for schedule(static)
-        for (int i = 0; i < n; ++i) {
-            double inv_mass = 1.0 / (*masses)[i];
-            (*parts)[i].x += dt * (*moments)[i].x * inv_mass;
-            (*parts)[i].y += dt * (*moments)[i].y * inv_mass;
-            (*parts)[i].z += dt * (*moments)[i].z * inv_mass;
-        }
-    
-        if (l != 0.0) {
-            #pragma omp for schedule(static)
-            for (int i = 0; i < n; ++i) {
-                (*parts)[i].x -= l * int((*parts)[i].x / l_half);
-                (*parts)[i].y -= l * int((*parts)[i].y / l_half);
-                (*parts)[i].z -= l * int((*parts)[i].z / l_half);
-            }
+            (*parts)[i].x -= l * int((*parts)[i].x / l_half);
+            (*parts)[i].y -= l * int((*parts)[i].y / l_half);
+            (*parts)[i].z -= l * int((*parts)[i].z / l_half);
         }
     }
 
-    computeEnergyForces();
-    
-    #pragma omp parallel for schedule(static, n)
+    if (verlet) {
+        computeEnergyForcesVerlet();
+    } else {
+        computeEnergyForces();
+    }
+
     for (int i = 0; i < n; ++i) {
         (*moments)[i].x -= dt_half * conv_force * (*forces)[i].x;
         (*moments)[i].y -= dt_half * conv_force * (*forces)[i].y;
@@ -301,24 +388,7 @@ void Simulator::start(const bool out, const int correction_step, const int save_
     double t = get_t_min();
     int count = 1;
 
-    cout << "\n=================================\n"
-         << "      Début de la simulation\n"
-         << "=================================\n"
-         << endl;
-
-    cout << "Temps initial: " << get_t_min() << "\nTemps final: " << get_t_max() << "\ndt: " << get_dt() << '\n'
-         << endl;
-
-    fillMoment();
-
-    ang = computeKineticEnergy();
-    temp = computeKineticTemperature();
-
-    cout << "État initial" << endl;
-    cout << "Temps: " << t << " | Énergie cinétique = " << ang << " | Température = " << temp << '\n'
-         << endl;
-
-    for (; t <= t_max + 1e-10; t += dt) {  // Avoid floating-point errors
+    for (; t <= t_max + 1e-10; t += dt) {
         velocityVerlet();
 
         ang = computeKineticEnergy();
@@ -327,12 +397,16 @@ void Simulator::start(const bool out, const int correction_step, const int save_
         if (count % correction_step == 0) {
             correctionMoment();
         }
-        
-        if (count % 100 == 0)   {
+
+        if (verlet && count % (int)l == 0) {
+            verletList();
+        }
+
+        if (count % 100 == 0) {
             cout << "Itération: " << count << " | Énergie: " << ang << " | Température: " << temp << '\n';
         }
 
-        if (out && count % save_step == 0) {  // Use count instead of floating-point math
+        if (out && count % save_step == 0) {
             outfile << n << endl;
             outfile << "Time: " << t << endl;
 
@@ -347,12 +421,6 @@ void Simulator::start(const bool out, const int correction_step, const int save_
 
         count++;
     }
-
-    ang = computeKineticEnergy();
-    temp = computeKineticTemperature();
-
-    cout << "\nÉtat final" << endl;
-    cout << "Temps: " << t - dt << " | Énergie cinétique = " << ang << " | Température = " << temp << endl;
 
     outfile.close();
 }
