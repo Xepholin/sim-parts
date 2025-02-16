@@ -9,7 +9,7 @@
 using namespace std;
 
 #pragma pack()
-struct alignas(32) data_t {
+struct alignas(64) data_t {
     double x = 0.0;
     double y = 0.0;
     double z = 0.0;

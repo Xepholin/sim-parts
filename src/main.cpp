@@ -15,7 +15,7 @@
 using namespace std;
 
 int main() {
-    Simulator sim(TOTAL_PARTS, n_sym, 0.0, 4000.0, 1, 300.0, 0.01, true);
+    Simulator sim(TOTAL_PARTS, n_sym, 0.0, 2000.0, 1, 300.0, 0.01, true);
     streamsize ss = std::cout.precision();
 
     cout << "\n=================================\n"
