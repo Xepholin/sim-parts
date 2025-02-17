@@ -94,7 +94,7 @@ double Simulator::computeEnergyForces() {
     std::fill(forces->begin(), forces->end(), data_t{0.0, 0.0, 0.0});
     double lj = 0.0;
 
-    #pragma omp parallel for reduction(+:lj)
+#pragma omp parallel for reduction(+ : lj)
     for (int i_sym = 0; i_sym < n_sym; ++i_sym) {
         const double ix_sym = vec_translation[i_sym][0];
         const double iy_sym = vec_translation[i_sym][1];
@@ -125,18 +125,18 @@ double Simulator::computeEnergyForces() {
                 const double fy = f_ij * dy;
                 const double fz = f_ij * dz;
 
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[i].x += fx;
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[i].y += fy;
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[i].z += fz;
 
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[j].x -= fx;
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[j].y -= fy;
-                #pragma omp atomic
+#pragma omp atomic
                 (*forces)[j].z -= fz;
 
                 lj += r12 - r6;
@@ -148,12 +148,12 @@ double Simulator::computeEnergyForces() {
 }
 
 void Simulator::verletList() {
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*neighbor)[i][0] = 0;
     }
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         int ni = 0;
         for (int j = i + 1; j < n; ++j) {
@@ -168,7 +168,7 @@ void Simulator::verletList() {
                 double r_ij_sq = dx * dx + dy * dy + dz * dz;
 
                 if (r_ij_sq < r_cut_sq) {
-                    #pragma omp atomic
+#pragma omp atomic
                     ni += 1;
 
                     int mi = 2 * ni - 1;
@@ -185,7 +185,7 @@ double Simulator::computeEnergyForcesVerlet() {
     std::fill(forces->begin(), forces->end(), data_t{0.0, 0.0, 0.0});
     double lj = 0.0;
 
-    #pragma omp parallel for reduction(+:lj)
+#pragma omp parallel for reduction(+ : lj)
     for (int i = 0; i < n; ++i) {
         double ix = (*parts)[i].x;
         double iy = (*parts)[i].y;
@@ -204,7 +204,7 @@ double Simulator::computeEnergyForcesVerlet() {
             double dz = iz - zj_loc;
             double r_ij_sq = dx * dx + dy * dy + dz * dz;
 
-            if (r_ij_sq > r_cut_sq || r_ij_sq < 1e-6)   {
+            if (r_ij_sq > r_cut_sq || r_ij_sq < 1e-6) {
                 continue;
             }
 
@@ -220,18 +220,18 @@ double Simulator::computeEnergyForcesVerlet() {
             const double fy = f_ij * dy;
             const double fz = f_ij * dz;
 
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[i].x += fx;
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[i].y += fy;
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[i].z += fz;
 
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[j].x -= fx;
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[j].y -= fy;
-            #pragma omp atomic
+#pragma omp atomic
             (*forces)[j].z -= fz;
 
             lj += r12 - r6;
@@ -244,7 +244,7 @@ double Simulator::computeEnergyForcesVerlet() {
 double Simulator::sumForces() {
     double sum_forces = 0.0;
 
-    #pragma omp parallel for reduction(+:sum_forces)
+#pragma omp parallel for reduction(+ : sum_forces)
     for (int i = 0; i < TOTAL_PARTS; ++i) {
         sum_forces += (*forces)[i].x + (*forces)[i].y + (*forces)[i].z;
     }
@@ -256,14 +256,14 @@ void Simulator::velocityVerlet() {
     double dt_half = 0.5 * dt;
     double l_half = 0.5 * l;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*moments)[i].x -= dt_half * conv_force * (*forces)[i].x;
         (*moments)[i].y -= dt_half * conv_force * (*forces)[i].y;
         (*moments)[i].z -= dt_half * conv_force * (*forces)[i].z;
     }
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         double inv_mass = 1.0 / (*masses)[i];
         (*parts)[i].x += dt * (*moments)[i].x * inv_mass;
@@ -272,7 +272,7 @@ void Simulator::velocityVerlet() {
     }
 
     if (l != 0.0) {
-        #pragma omp parallel for
+#pragma omp parallel for
         for (int i = 0; i < n; ++i) {
             (*parts)[i].x -= l * int((*parts)[i].x / l_half);
             (*parts)[i].y -= l * int((*parts)[i].y / l_half);
@@ -286,7 +286,7 @@ void Simulator::velocityVerlet() {
         computeEnergyForces();
     }
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*moments)[i].x -= dt_half * conv_force * (*forces)[i].x;
         (*moments)[i].y -= dt_half * conv_force * (*forces)[i].y;
@@ -297,7 +297,7 @@ void Simulator::velocityVerlet() {
 double Simulator::computeKineticEnergy() {
     double sum = 0.0;
 
-    #pragma omp parallel for reduction(+:sum)
+#pragma omp parallel for reduction(+ : sum)
     for (int i = 0; i < n; ++i) {
         double px = (*moments)[i].x;
         double py = (*moments)[i].y;
@@ -320,7 +320,7 @@ void Simulator::correctionRatio() {
     const double energy_kinetic_init = computeKineticEnergy();
     const double ratio = sqrt((n_dl * const_r * T0) / energy_kinetic_init);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         auto& p = (*moments)[i];
         p.x *= ratio;
@@ -334,7 +334,7 @@ void Simulator::correctionCenter() {
     double Py = 0.0;
     double Pz = 0.0;
 
-    #pragma omp parallel for reduction(+:Px, Py, Pz)
+#pragma omp parallel for reduction(+ : Px, Py, Pz)
     for (int i = 0; i < n; ++i) {
         Px += (*moments)[i].x;
         Py += (*moments)[i].y;
@@ -345,7 +345,7 @@ void Simulator::correctionCenter() {
     Py /= n;
     Pz /= n;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*moments)[i].x -= Px;
         (*moments)[i].y -= Py;
@@ -357,7 +357,7 @@ void Simulator::fillMoment() {
     // srand(random_device()());
     srand(42);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         double c = 0.0;
         double s = 0.0;
@@ -388,7 +388,7 @@ void Simulator::correctionMoment() {
     const double T = computeKineticTemperature();
     const double lambda = gamma * ((T0 / T) - 1.0);
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < n; ++i) {
         (*moments)[i].x += lambda * (*moments)[i].x;
         (*moments)[i].y += lambda * (*moments)[i].y;
@@ -403,6 +403,21 @@ void Simulator::start(const bool out, const int correction_step, const int save_
         cerr << "Failed to open file " << OUTPUT_PARTS_FILE << " for writing!" << endl;
         return;
     }
+
+    outfile << "MODEL 1\n";
+
+    for (int i = 0; i < n; ++i) {
+        outfile << "ATOM  "
+                << setw(5) << i + 1
+                << "  C   MOL     1    "
+                << fixed << setprecision(3)
+                << setw(8) << parts->at(i).x
+                << setw(8) << parts->at(i).y
+                << setw(8) << parts->at(i).z
+                << "  1.00  0.00           C  \n";
+    }
+
+    outfile << "ENDMDL\n";
 
     double ang = 0.0;
     double temp = 0.0;
@@ -428,16 +443,20 @@ void Simulator::start(const bool out, const int correction_step, const int save_
         }
 
         if (out && count % save_step == 0) {
-            outfile << n << endl;
-            outfile << "Time: " << t << endl;
+            outfile << "MODEL " << count / save_step << "\n";
 
             for (int i = 0; i < n; ++i) {
-                outfile << "C"
-                        << " " << fixed << setprecision(6)
-                        << parts->at(i).x << " "
-                        << parts->at(i).y << " "
-                        << parts->at(i).z << endl;
+                outfile << "ATOM  "
+                        << setw(5) << i + 1
+                        << "  C   MOL     1    "
+                        << fixed << setprecision(3)
+                        << setw(8) << parts->at(i).x
+                        << setw(8) << parts->at(i).y
+                        << setw(8) << parts->at(i).z
+                        << "  1.00  0.00           C  \n";
             }
+
+            outfile << "ENDMDL\n";
         }
 
         count++;

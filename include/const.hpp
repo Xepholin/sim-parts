@@ -10,7 +10,7 @@
 using namespace std;
 
 static string DEFAULT_PARTS_FILE = "../particule.xyz";
-static string OUTPUT_PARTS_FILE = "../output.xyz";
+static string OUTPUT_PARTS_FILE = "../output.pdb";
 
 const double n_sym = 27.0;
 
