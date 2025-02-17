@@ -1,56 +1,66 @@
-# Code de Simulation Microscopique
+# Simulation de Dynamique Moléculaire
+
+Ce projet est une simulation de dynamique moléculaire implémentée en C++. Il simule le comportement de particules sous l'influence des forces du potentiel de Lennard-Jones. La simulation prend en charge les conditions aux limites périodiques et peut utiliser l'algorithme de la liste de Verlet pour des calculs de force efficaces.
+
+## Fonctionnalités
+
+- **Potentiel de Lennard-Jones** : Simule les interactions entre les particules en utilisant le potentiel de Lennard-Jones.
+- **Conditions aux Limites Périodiques** : Assure que les particules interagissent à travers les limites de manière périodique.
+- **Liste de Verlet** : Optimise les calculs de force en maintenant une liste des voisins proches pour chaque particule.
+- **Intégration de Verlet** : Utilise l'algorithme de Verlet pour l'intégration des équations du mouvement.
+- **Contrôle de la Température** : Permet de maintenir la température du système à une valeur souhaitée grâce à un facteur de correction.
+- **Sortie au Format PDB** : Génère des fichiers de sortie au format PDB pour visualiser les configurations des particules.
+
+## Structure du Projet
+
+- **main.cpp** : Point d'entrée du programme, gère les arguments de la ligne de commande et lance la simulation.
+- **part.cpp** : Implémentation des méthodes de la classe `Simulator`, y compris les calculs de force, l'intégration et la gestion des conditions aux limites.
+- **tools.cpp** : Contient des fonctions utilitaires pour les calculs statistiques et d'initialisation.
+- **const.hpp** : Définit les constantes physiques et les paramètres de simulation.
+- **part.hpp** : Déclaration de la classe `Simulator` et des structures de données utilisées.
 
 ## Compilation
 
-### Pre-requis
-- CMake 3.16+
-- C17 conforming compiler
+Le projet utilise CMake pour la compilation. Pour compiler le projet, exécutez les commandes suivantes :
 
-### Build
-```sh
-cmake -S . -B <BUILD_DIR> [CMAKE_FLAGS ...]
-cmake --build <BUILD_DIR> [-j]
+```bash
+mkdir build
+cd build
+cmake ..
+make
 ```
+## Utilisation
 
-### Run
-```sh
-<BUILD_DIR>/spart [PARTICULES_FILE_PATH]
+Le programme prend plusieurs arguments en ligne de commande pour configurer la simulation :
+```bash
+./spart n_particles n_sym t_min t_max dt T0 gamma use_verlet input_file [output_file]
 ```
-## À propos
+- n_particles : Nombre de particules dans la simulation.
 
-**Objectif : développer un code de simulation microscopique basé sur un potentiel de Lennard-Jones pour étudier un fluide de particules homogène (i.e. toutes les particules sont identiques).**
+- n_sym : Nombre de translations périodiques à considérer.
 
-- **Langage: au choix**
-- **Processeur visé: au choix.**
+- t_min : Temps initial de la simulation.
 
-Le fichier ``particule.xyz`` contient les coordonnées cartésiennes (x,y,z) d’un système de 1 000 particules
-identiques, avec le format :
+- t_max : Temps final de la simulation.
 
-    > 0 1
-    > 2 x y z
-    > 2 x y z
+- dt : Pas de temps pour l'intégration.
 
-La première ligne est un commentaire, dans les suivantes ‘ 2 ‘ est le type de particule, pour notre sujet sans importance. Ecrire un code qui permet de lire ce fichier et de stocker les coordonnées x,y,z dans un (ou des) vecteurs ou tableaux. On introduira les paramètre N_particules_total = 1000 et N_particules_local, le dernier permettant de réaliser des calculs sur un sous ensemble des N_particules_local premières particules (N_particules_local < N_particules_total).
+- T0 : Température cible du système.
 
+- gamma : Facteur de correction pour le contrôle de la température.
 
-Sur la base des coordonnées (x,y,z) des 1000 particules, calculer l’énergie microscopique de ce système et les forces agissant sur chacune des particules dans le cas d’un potentiel de Lennard Jones :
+- use_verlet : Utiliser la liste de Verlet (1 pour oui, 0 pour non).
 
-```math
-U^{LJ} = 4 \sum_{i=1}^N \sum_{j>i}^N \varepsilon^* \left[ \left(\frac{r^*}{r_{ij}^*}\right)^{12} - 2 \left(\frac{r^*}{r_{ij}^*}\right)^6 \right] = 4 \sum_{i=1}^N \sum_{j>i}^N u_{ij}
+- input_file : Fichier d'entrée contenant les positions initiales des particules.
+
+- output_file : Fichier de sortie pour enregistrer les configurations (optionnel, par défaut `../output.pdb`).
+
+## Exemple
+
+Pour lancer une simulation avec 1000 particules, en utilisant la liste de Verlet, et enregistrer les résultats dans `output.pdb` :
+```bash
+./spart 1000 27 0 100 0.01 300 0.1 1 initial_positions.txt output.pdb
 ```
+## Visualisation des Résultats
 
-On prendra $r^* = 3.0$ et $\varepsilon^* = 0.2$.
-
-Rappel pour un terme de Lennard Jones
-
-```math
-U^{LJ} = 4 \sum_{i=1}^N \sum_{j>i}^N \varepsilon^* \left[ \left(\frac{r^*}{r_{ij}^*}\right)^{12} - 2 \left(\frac{r^*}{r_{ij}^*}\right)^6 \right] = \sum_{i=1}^N \sum_{j>i}^N u_{ij}
-```
-
-Les forces des particules se calculent à partir du gradient analytique associé aux fonctions élémentaires $u_{ij}$
-
-```math
-\frac{\partial u_{ij}}{\partial x_i} = -4 \varepsilon^* \left[ 12 \left(\frac{r^*}{r_{ij}}\right)^{13} - 2 \times 6 \left(\frac{r^*}{r_{ij}}\right)^7 \right] \times \frac{\partial r_{ij}}{\partial x_i} = -48 \varepsilon_{ij}^* \left[ \left(\frac{r^*}{r_{ij}}\right)^{14} - \left(\frac{r^*}{r_{ij}}\right)^8 \right] \times (x_i - x_j)
-```
-
-Comme pour les coordonnées (x,y,z), les forces (fx,fy,fz) seront stockées dans un (des) vecteur(s) ou tableau(x).
+Les fichiers de sortie au format PDB peuvent être visualisés à l'aide de logiciels de visualisation moléculaire tels que VMD.
