@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -16,10 +16,10 @@ struct alignas(64) data_t {
 };
 
 class Simulator {
-public:
+   public:
     Simulator(const int n, const int n_sym, const double t_min, const double t_max, const double dt, const double T0, const double gamma, const bool verlet);
     ~Simulator();
-    
+
     double get_n();
     double get_n_sym();
     double get_t_min();
@@ -39,9 +39,9 @@ public:
     void correctionCenter();
     void fillMoment();
     void correctionMoment();
-    void start(const bool out, const int correction_step, const int save_step);
+    void start(const bool out, const int correction_step, const int save_step, const string output);
 
-private:
+   private:
     int n = 0;
     int n_sym = 0;
     double t_min = 0.0;
@@ -50,12 +50,16 @@ private:
     double T0 = 0.0;
     double gamma = 0.0;
 
+    double n_dl = 0;
+    double n_neighbor = 0;
+    int n_max_neighbor = 0;
+
     bool verlet = false;
 
-    unique_ptr<array<data_t, TOTAL_PARTS>> parts;
-    unique_ptr<array<data_t, TOTAL_PARTS>> forces;
-    unique_ptr<array<data_t, TOTAL_PARTS>> moments;
-    unique_ptr<array<data_t, TOTAL_PARTS>> velocities;
-    unique_ptr<array<double, TOTAL_PARTS>> masses;
-    unique_ptr<array<array<int, n_max_neighbor * 2>, TOTAL_PARTS>> neighbor;
+    std::vector<data_t> parts;
+    std::vector<data_t> forces;
+    std::vector<data_t> moments;
+    std::vector<data_t> velocities;
+    std::vector<double> masses;
+    std::vector<std::vector<int>> neighbor;
 };

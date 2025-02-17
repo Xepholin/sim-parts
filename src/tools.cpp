@@ -8,21 +8,25 @@
 
 using namespace std;
 
+#include <vector>
+#include <algorithm>
+
 template <typename T>
 void init_f64(const int n, T &__restrict__ a, const double val) {
-    if constexpr (is_same_v<T, array<data_t, TOTAL_PARTS>>) {
+    if constexpr (std::is_same_v<T, std::vector<data_t>>) {
         for (int i = 0; i < n; ++i) {
             a[i].x = val;
             a[i].y = val;
             a[i].z = val;
         }
-    } else if constexpr (is_same_v<T, array<double, TOTAL_PARTS>>) {
-        fill(a.begin(), a.begin() + n, val);
+    } else if constexpr (std::is_same_v<T, std::vector<double>>) {
+        std::fill(a.begin(), a.begin() + n, val);
     }
 }
 
-template void init_f64<array<data_t, TOTAL_PARTS>>(int, array<data_t, TOTAL_PARTS> &__restrict__, const double);
-template void init_f64<array<double, TOTAL_PARTS>>(int, array<double, TOTAL_PARTS> &__restrict__, const double);
+template void init_f64<std::vector<data_t>>(int, std::vector<data_t> &__restrict__, const double);
+template void init_f64<std::vector<double>>(int, std::vector<double> &__restrict__, const double);
+
 
 double mean(const int n, const unique_ptr<vector<double>> &__restrict__ arr) {
     return reduce(arr->begin(), arr->end()) / n;

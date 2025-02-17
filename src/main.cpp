@@ -14,8 +14,30 @@
 
 using namespace std;
 
-int main() {
-    Simulator sim(TOTAL_PARTS, n_sym, 0.0, 2000.0, 1, 300.0, 0.01, true);
+int main(int argc, char *argv[]) {
+    if (argc != 10 && argc != 11) {
+        cerr << "Usage: " << argv[0] << " n_particles n_sym t_min t_max dt T0 gamma use_verlet input_file [output_file]\n";
+        return 1;
+    }
+
+    const int n_particles = atoi(argv[1]);
+    const int n_sym = atoi(argv[2]);
+    const double t_min = atof(argv[3]);
+    const double t_max = atof(argv[4]);
+    const double dt = atof(argv[5]);
+    const double T0 = atof(argv[6]);
+    const double gamma = atof(argv[7]);
+    const bool use_verlet = atoi(argv[8]) != 0;
+    const string input = argv[9];
+    string output;
+
+    if (argc == 11) {
+        output = argv[10];
+    } else {
+        output = DEFAULT_OUTPUT;
+    }
+
+    Simulator sim(n_particles, n_sym, t_min, t_max, dt, T0, gamma, use_verlet);
     streamsize ss = std::cout.precision();
 
     cout << "\n=================================\n"
@@ -23,7 +45,9 @@ int main() {
          << "=================================\n"
          << endl;
 
-    sim.fillVec(DEFAULT_PARTS_FILE);
+    cout << "Lecture dans " << input << " ...\n" << endl;
+
+    sim.fillVec(input);
     sim.verletList();
 
     cout << "Somme des forces sym " << sim.get_n_sym() << ": " << scientific << sim.sumForces() << endl;
@@ -46,9 +70,11 @@ int main() {
          << " | Température = " << sim.computeKineticTemperature() << '\n'
          << endl;
 
+    cout << "Écriture dans " << output << " ...\n" << endl;
+
     auto t1 = chrono::high_resolution_clock::now();
 
-    sim.start(true, 15, 10);
+    sim.start(true, 15, 10, output);
 
     auto t2 = chrono::high_resolution_clock::now();
 
