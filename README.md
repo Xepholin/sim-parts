@@ -59,7 +59,7 @@ Le programme prend plusieurs arguments en ligne de commande pour configurer la s
 
 Pour lancer une simulation avec 1000 particules, en utilisant la liste de Verlet, et enregistrer les résultats dans `output.pdb` :
 ```bash
-./spart 1000 27 0 100 0.01 300 0.1 1 initial_positions.txt output.pdb
+./spart 1000 27 0 2000 1 300 0.01 1 particule.xyz output.pdb
 ```
 ## Visualisation des Résultats
 
